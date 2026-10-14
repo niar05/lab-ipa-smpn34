@@ -1,4 +1,4 @@
 window.LAB_SUPABASE_CONFIG = {
-  url: 'https://mlsmfaucnuttrqyysxpl.supabase.co',
-  anonKey: 'sb_publishable_55uEBKhrdRhnrknGW3RYdQ_G4ODJK-q'
+  url: 'https://dgrkksfysijrjzoopwvs.supabase.co',
+  anonKey: 'sb_publishable_Fp5jEVi2dSZZLQTvh2NKSw_osjobqyB'
 };
