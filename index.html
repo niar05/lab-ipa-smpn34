@@ -4443,6 +4443,23 @@
   });
   $('#pinjamCancel').addEventListener('click', ()=> closeOverlay(pinjamOverlay));
 
+  /* Ubah error Supabase menjadi pesan yang menjelaskan penyebabnya */
+  function pesanErrorSupabase(err){
+    const msg = String(err && err.message || '');
+    const code = String(err && err.code || '');
+    if(msg === 'Database bersama belum dikonfigurasi.')
+      return 'Database bersama belum dikonfigurasi. Silakan hubungi pengelola website.';
+    if(/Failed to fetch|NetworkError|Load failed/i.test(msg))
+      return 'Tidak dapat terhubung ke database. Periksa koneksi internet, atau project Supabase sedang dijeda (paused) oleh pengelola.';
+    if(code === 'PGRST205' || code === '42P01' || /could not find the table|does not exist/i.test(msg))
+      return 'Tabel peminjaman belum dibuat di database. Pengelola perlu menjalankan data/supabase-schema.sql.';
+    if(code === '42501' || /row-level security|permission denied/i.test(msg))
+      return 'Pengajuan ditolak oleh aturan keamanan database (RLS). Pengelola perlu menjalankan ulang data/supabase-schema.sql.';
+    if(/Invalid API key|No API key/i.test(msg))
+      return 'Kunci API Supabase tidak valid. Periksa data/supabase-config.js.';
+    return 'Gagal mengirim pengajuan: ' + (msg || 'kesalahan tidak diketahui') + (code ? ' (kode ' + code + ')' : '');
+  }
+
   pinjamForm.addEventListener('submit', async function(e){
     e.preventDefault();
     if(!selectedGroup) return;
@@ -4476,16 +4493,16 @@
       if(error) throw error;
       pinjamMsg.textContent = 'Pengajuan berhasil dikirim. Data sudah masuk ke daftar Peminjaman.';
       pinjamMsg.className = 'form-msg ok';
-      await refreshPeminjaman();
+      // Gagal memuat ulang daftar TIDAK berarti pengajuan gagal, jadi dipisah
+      refreshPeminjaman().catch(e => console.warn('Gagal memuat ulang daftar peminjaman:', e));
       setTimeout(()=>{
         closeOverlay(pinjamOverlay);
         const sec = document.getElementById('peminjaman');
         if(sec) sec.scrollIntoView({behavior:'smooth', block:'start'});
       }, 700);
     }catch(err){
-      pinjamMsg.textContent = err.message === 'Database bersama belum dikonfigurasi.'
-        ? 'Database bersama belum dikonfigurasi. Silakan hubungi pengelola website.'
-        : 'Gagal mengirim pengajuan. Coba lagi.';
+      console.error('Gagal mengirim pengajuan:', err);
+      pinjamMsg.textContent = pesanErrorSupabase(err);
       pinjamMsg.className = 'form-msg err';
     }finally{
       btn.disabled = false;
